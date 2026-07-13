@@ -8,8 +8,14 @@ group = providers.gradleProperty("group").get()
 version = providers.gradleProperty("version").get()
 description = "Shared Gradle convention plugins for Siloverse Kotlin and Spring services."
 
+val pluginMarkerArtifactIds = mapOf(
+    "io.github.siloverse.kotlin-application" to "kotlin-application-plugin",
+    "io.github.siloverse.kotlin-library" to "kotlin-library-plugin",
+    "io.github.siloverse.spring-boot-application" to "spring-boot-application-plugin"
+)
+
 base {
-    archivesName.set("siloverse-gradle-conventions")
+    archivesName.set("conventions")
 }
 
 dependencies {
@@ -30,7 +36,7 @@ gradlePlugin {
 tasks.jar {
     manifest {
         attributes(
-            "Implementation-Title" to "siloverse-gradle-conventions",
+            "Implementation-Title" to "conventions",
             "Implementation-Version" to project.version.toString()
         )
     }
@@ -42,11 +48,12 @@ tasks.withType<Test>().configureEach {
 
 publishing {
     publications.withType<MavenPublication>().configureEach {
+        groupId = project.group.toString()
         if (name == "pluginMaven") {
-            artifactId = "siloverse-gradle-conventions"
+            artifactId = "conventions"
         }
         pom {
-            name.set("siloverse-gradle-conventions")
+            name.set("conventions")
             description.set(project.description)
             url.set("https://github.com/siloverse/siloverse-build")
         }
@@ -71,3 +78,14 @@ publishing {
     }
 }
 
+afterEvaluate {
+    publishing {
+        publications.withType<MavenPublication>()
+            .matching { it.name.endsWith("PluginMarkerMaven") }
+            .configureEach {
+                val pluginId = name.removeSuffix("PluginMarkerMaven")
+                groupId = project.group.toString()
+                artifactId = pluginMarkerArtifactIds.getValue(pluginId)
+            }
+    }
+}

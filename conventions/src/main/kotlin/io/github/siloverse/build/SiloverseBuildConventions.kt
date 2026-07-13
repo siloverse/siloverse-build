@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 object SiloverseBuild {
-    const val group = "io.github.siloverse.build"
+    const val group = "io.github.siloverse.gradle"
     const val javaVersion = 21
 
     val version: String
@@ -23,7 +23,7 @@ object SiloverseBuild {
             ?: "0.0.1-SNAPSHOT"
 
     val platformNotation: String
-        get() = "$group:siloverse-platform:$version"
+        get() = "$group:platform:$version"
 }
 
 fun Project.configureJavaToolchain() {
@@ -119,4 +119,3 @@ private fun Project.githubOwner(): String =
 private fun org.gradle.api.artifacts.dsl.DependencyHandler.addPlatform(
     configurationName: String
 ): Dependency? = add(configurationName, platform(SiloverseBuild.platformNotation))
-
