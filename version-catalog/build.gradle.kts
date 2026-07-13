@@ -17,9 +17,9 @@ publishing {
     publications {
         create<MavenPublication>("versionCatalog") {
             from(components["versionCatalog"])
-            artifactId = "siloverse-version-catalog"
+            artifactId = "version-catalog"
             pom {
-                name.set("siloverse-version-catalog")
+                name.set("version-catalog")
                 description.set(project.description)
                 url.set("https://github.com/siloverse/siloverse-build")
             }
@@ -44,4 +44,3 @@ publishing {
         }
     }
 }
-

@@ -4,13 +4,13 @@ Shared Gradle build tooling for Kotlin and Spring microservice repositories.
 
 Published coordinates:
 
-- `io.github.siloverse.build:siloverse-gradle-conventions:<version>`
-- `io.github.siloverse.build:siloverse-version-catalog:<version>`
-- `io.github.siloverse.build:siloverse-platform:<version>`
+- `io.github.siloverse.gradle:conventions:<version>`
+- `io.github.siloverse.gradle:version-catalog:<version>`
+- `io.github.siloverse.gradle:platform:<version>`
 - Gradle plugin marker artifacts for:
-  - `io.github.siloverse.kotlin-library`
-  - `io.github.siloverse.kotlin-application`
-  - `io.github.siloverse.spring-boot-application`
+  - `io.github.siloverse.gradle:kotlin-library-plugin:<version>`
+  - `io.github.siloverse.gradle:kotlin-application-plugin:<version>`
+  - `io.github.siloverse.gradle:spring-boot-application-plugin:<version>`
 
 The examples use GitHub owner `siloverse`. If the repository is owned by a different user or org, pass `-Psiloverse.github.owner=<owner>` when publishing and replace `siloverse` in consumer repository URLs.
 
@@ -24,7 +24,7 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 - Java toolchain 21
 - sources and javadoc jars
 - JUnit Platform
-- the shared `siloverse-platform`
+- the shared `platform`
 - GitHub Packages publishing defaults
 
 `io.github.siloverse.kotlin-application` applies `io.github.siloverse.kotlin-library` plus the Gradle `application` plugin.
@@ -40,7 +40,7 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 - Java toolchain 21
 - JUnit Platform
 - Spring Boot test and Testcontainers JUnit support
-- the shared `siloverse-platform`
+- the shared `platform`
 
 ## Local Verification
 
@@ -52,8 +52,8 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 Verify plugin markers after publishing locally:
 
 ```bash
-find ~/.m2/repository -path '*io.github.siloverse.kotlin-library.gradle.plugin*' -print
-find ~/.m2/repository -path '*io.github.siloverse.spring-boot-application.gradle.plugin*' -print
+find ~/.m2/repository -path '*kotlin-library-plugin*' -print
+find ~/.m2/repository -path '*spring-boot-application-plugin*' -print
 ```
 
 ## Publish To GitHub Packages
@@ -61,7 +61,7 @@ find ~/.m2/repository -path '*io.github.siloverse.spring-boot-application.gradle
 `gradle.properties` contains the single shared project version:
 
 ```properties
-version=0.0.1-SNAPSHOT
+version=0.0.1
 ```
 
 Publish manually:
@@ -89,6 +89,20 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+    resolutionStrategy {
+        eachPlugin {
+            val markerArtifactId = when (requested.id.id) {
+                "io.github.siloverse.kotlin-library" -> "kotlin-library-plugin"
+                "io.github.siloverse.kotlin-application" -> "kotlin-application-plugin"
+                "io.github.siloverse.spring-boot-application" -> "spring-boot-application-plugin"
+                else -> null
+            }
+
+            if (markerArtifactId != null) {
+                useModule("io.github.siloverse.gradle:$markerArtifactId:${requested.version}")
+            }
+        }
+    }
 }
 
 dependencyResolutionManagement {
@@ -106,7 +120,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            from("io.github.siloverse.build:siloverse-version-catalog:<version>")
+            from("io.github.siloverse.gradle:version-catalog:<version>")
         }
     }
 }
@@ -150,8 +164,8 @@ The convention plugins add the platform automatically. A project can also consum
 
 ```kotlin
 dependencies {
-    implementation(platform("io.github.siloverse.build:siloverse-platform:<version>"))
-    testImplementation(platform("io.github.siloverse.build:siloverse-platform:<version>"))
+    implementation(platform("io.github.siloverse.gradle:platform:<version>"))
+    testImplementation(platform("io.github.siloverse.gradle:platform:<version>"))
 }
 ```
 
@@ -175,4 +189,3 @@ dependencies {
 ```
 
 Avoid changing the shared catalog or platform for one service unless the exception should become standard across all Siloverse services.
-

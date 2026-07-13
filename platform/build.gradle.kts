@@ -31,9 +31,9 @@ publishing {
     publications {
         create<MavenPublication>("mavenJavaPlatform") {
             from(components["javaPlatform"])
-            artifactId = "siloverse-platform"
+            artifactId = "platform"
             pom {
-                name.set("siloverse-platform")
+                name.set("platform")
                 description.set(project.description)
                 url.set("https://github.com/siloverse/siloverse-build")
             }
