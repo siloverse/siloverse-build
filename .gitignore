@@ -8,8 +8,6 @@ out/
 
 *.class
 *.log
-
-.idea/
 *.iml
 
 local.properties
