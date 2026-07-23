@@ -2,6 +2,7 @@
 kotlin = "2.4.0"
 spring-boot = "4.1.0"
 spring-dependency-management = "1.1.7"
+spring-modulith = "2.1.0"
 junit-jupiter = "6.1.2"
 testcontainers = "2.0.5"
 jackson = "2.22.1"
@@ -23,6 +24,7 @@ spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-star
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-dependency-management-gradle-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "spring-dependency-management" }
+spring-modulith-bom = {module = "org.springframework.modulith:spring-modulith-bom" , version.ref="spring-modulith"}
 
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-jupiter" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
