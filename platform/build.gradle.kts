@@ -15,6 +15,7 @@ dependencies {
     api(platform(libs.spring.boot.dependencies))
     api(platform(libs.testcontainers.bom))
     api(platform(libs.junit.bom))
+    api(platform(libs.spring.modulith.bom))
 
     constraints {
         api(libs.kotlin.stdlib)
