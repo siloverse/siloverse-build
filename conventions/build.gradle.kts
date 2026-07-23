@@ -8,12 +8,6 @@ group = providers.gradleProperty("group").get()
 version = providers.gradleProperty("version").get()
 description = "Shared Gradle convention plugins for Siloverse Kotlin and Spring services."
 
-val pluginMarkerArtifactIds = mapOf(
-    "io.github.siloverse.kotlin-application" to "kotlin-application-plugin",
-    "io.github.siloverse.kotlin-library" to "kotlin-library-plugin",
-    "io.github.siloverse.spring-boot-application" to "spring-boot-application-plugin"
-)
-
 base {
     archivesName.set("conventions")
 }
@@ -75,17 +69,5 @@ publishing {
                     .orNull
             }
         }
-    }
-}
-
-afterEvaluate {
-    publishing {
-        publications.withType<MavenPublication>()
-            .matching { it.name.endsWith("PluginMarkerMaven") }
-            .configureEach {
-                val pluginId = name.removeSuffix("PluginMarkerMaven")
-                groupId = project.group.toString()
-                artifactId = pluginMarkerArtifactIds.getValue(pluginId)
-            }
     }
 }
