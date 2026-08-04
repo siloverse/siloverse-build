@@ -1,18 +1,6 @@
-import io.github.siloverse.build.addSiloversePlatform
-import io.github.siloverse.build.configureJavaToolchain
-import io.github.siloverse.build.configureJUnitPlatform
-import io.github.siloverse.build.configureKotlinJvm
-import io.github.siloverse.build.configureMavenPublishing
-
+// Deprecated: kept for existing consumers. Use `io.github.siloverse.jvm-library`, which
+// supports Java, Kotlin and mixed sources. This id only forces Kotlin on unconditionally.
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    `java-library`
-    `maven-publish`
+    id("io.github.siloverse.jvm-library")
 }
-
-configureJavaToolchain()
-configureKotlinJvm()
-addSiloversePlatform()
-configureJUnitPlatform()
-configureMavenPublishing()
-

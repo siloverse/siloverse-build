@@ -1,38 +1,42 @@
 # siloverse-build
 
-Shared Gradle build tooling for Kotlin and Spring microservice repositories.
+Shared Gradle build tooling for JVM microservice repositories. The convention plugins are
+language neutral: one plugin serves Java-only, Kotlin-only and mixed Java + Kotlin modules.
 
 Published coordinates:
 
 - `io.github.siloverse.gradle:conventions:<version>`
 - `io.github.siloverse.gradle:version-catalog:<version>`
 - `io.github.siloverse.gradle:platform:<version>`
-- Gradle plugin marker artifacts for:
-  - `io.github.siloverse.gradle:kotlin-library-plugin:<version>`
-  - `io.github.siloverse.gradle:kotlin-application-plugin:<version>`
-  - `io.github.siloverse.gradle:spring-boot-application-plugin:<version>`
+- Gradle plugin markers for:
+  - `io.github.siloverse.jvm-library`
+  - `io.github.siloverse.jvm-application`
+  - `io.github.siloverse.spring-boot-application`
+  - `io.github.siloverse.kotlin-library` (deprecated alias)
+  - `io.github.siloverse.kotlin-application` (deprecated alias)
 
 The examples use GitHub owner `siloverse`. If the repository is owned by a different user or org, pass `-Psiloverse.github.owner=<owner>` when publishing and replace `siloverse` in consumer repository URLs.
 
 ## Conventions
 
-`io.github.siloverse.kotlin-library` applies:
+`io.github.siloverse.jvm-library` applies:
 
-- Kotlin JVM
 - `java-library`
+- Kotlin JVM, when the module uses Kotlin (see [Language Support](#language-support))
 - `maven-publish`
 - Java toolchain 21
+- `-parameters` and UTF-8 for Java, `-java-parameters` and `-Xjsr305=strict` for Kotlin
 - sources and javadoc jars
 - JUnit Platform
 - the shared `platform`
 - GitHub Packages publishing defaults
 
-`io.github.siloverse.kotlin-application` applies `io.github.siloverse.kotlin-library` plus the Gradle `application` plugin.
+`io.github.siloverse.jvm-application` applies `io.github.siloverse.jvm-library` plus the Gradle `application` plugin.
 
 `io.github.siloverse.spring-boot-application` applies:
 
-- Kotlin JVM
-- Kotlin Spring
+- `java`
+- Kotlin JVM and Kotlin Spring (all-open), when the module uses Kotlin
 - Spring Boot
 - Spring dependency-management
 - `application`
@@ -40,7 +44,64 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 - Java toolchain 21
 - JUnit Platform
 - Spring Boot test and Testcontainers JUnit support
+- `jackson-module-kotlin` and `kotlin-reflect`, only when the module uses Kotlin
 - the shared `platform`
+
+`io.github.siloverse.kotlin-library` and `io.github.siloverse.kotlin-application` still work.
+They are thin aliases that force Kotlin on and then delegate to the `jvm-*` plugins. New
+modules should use the `jvm-*` ids regardless of language.
+
+## Language Support
+
+A module applying these plugins can contain Java only, Kotlin only, or both at once —
+`src/main/java` and `src/main/kotlin` are compiled together, so Java can call Kotlin and
+Kotlin can call Java inside the same module.
+
+**Java is the default.** The Kotlin toolchain is applied only when the module needs it, so a
+pure Java service does not carry the Kotlin compiler or runtime. Resolution order per module:
+
+1. The build file already applies `org.jetbrains.kotlin.jvm` -> Kotlin support is on.
+2. `siloverse.kotlin=true` / `siloverse.kotlin=false` -> that wins. Set it in the consumer's
+   `gradle.properties`, or pass `-Psiloverse.kotlin=true` on the command line.
+3. Otherwise auto-detect: Kotlin is on when the module has a `src/main/kotlin` or
+   `src/test/kotlin` directory, and off otherwise. A new module with no sources yet is
+   treated as Java-only.
+
+Auto-detection is a configuration cache input; creating `src/main/kotlin` in a previously
+Java-only module invalidates the cache and turns Kotlin support on for the next build — no
+build file change needed to start mixing Kotlin into a Java module.
+
+Java-only module:
+
+```kotlin
+plugins {
+    id("io.github.siloverse.jvm-library") version "<version>"
+}
+```
+
+Mixed Java + Kotlin Spring Boot service:
+
+```kotlin
+plugins {
+    id("io.github.siloverse.spring-boot-application") version "<version>"
+}
+
+dependencies {
+    implementation(libs.bundles.spring.web)
+}
+```
+
+```
+src/main/java/com/example/OrderController.java   // Java @RestController
+src/main/kotlin/com/example/PricingService.kt    // Kotlin @Service, injected into the above
+```
+
+Pin a module explicitly when auto-detection is not what you want:
+
+```properties
+# gradle.properties — always apply Kotlin in this repository, even before any .kt exists
+siloverse.kotlin=true
+```
 
 ## Local Verification
 
@@ -52,8 +113,8 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 Verify plugin markers after publishing locally:
 
 ```bash
-find ~/.m2/repository -path '*kotlin-library-plugin*' -print
-find ~/.m2/repository -path '*spring-boot-application-plugin*' -print
+find ~/.m2/repository -path '*io/github/siloverse/jvm-library*' -print
+find ~/.m2/repository -path '*io/github/siloverse/spring-boot-application*' -print
 ```
 
 ## Publish To GitHub Packages
@@ -89,20 +150,6 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
-    resolutionStrategy {
-        eachPlugin {
-            val markerArtifactId = when (requested.id.id) {
-                "io.github.siloverse.kotlin-library" -> "kotlin-library-plugin"
-                "io.github.siloverse.kotlin-application" -> "kotlin-application-plugin"
-                "io.github.siloverse.spring-boot-application" -> "spring-boot-application-plugin"
-                else -> null
-            }
-
-            if (markerArtifactId != null) {
-                useModule("io.github.siloverse.gradle:$markerArtifactId:${requested.version}")
-            }
-        }
-    }
 }
 
 dependencyResolutionManagement {
@@ -130,11 +177,11 @@ For local testing before GitHub Packages publish, add `mavenLocal()` before the 
 
 ## Consumer Build Files
 
-Kotlin library:
+Library (Java, Kotlin or both):
 
 ```kotlin
 plugins {
-    id("io.github.siloverse.kotlin-library") version "<version>"
+    id("io.github.siloverse.jvm-library") version "<version>"
 }
 
 group = "io.github.siloverse"
@@ -152,11 +199,13 @@ group = "io.github.siloverse"
 version = "0.1.0"
 
 dependencies {
-    implementation(libs.spring.boot.starter.web)
-    implementation(libs.jackson.module.kotlin)
+    implementation(libs.bundles.spring.web)
     testImplementation(libs.testcontainers.postgresql)
 }
 ```
+
+The `spring-web` bundle is language neutral. `jackson-module-kotlin` and `kotlin-reflect`
+are added automatically for modules that compile Kotlin, so nothing extra is needed there.
 
 ## Platform/BOM
 
