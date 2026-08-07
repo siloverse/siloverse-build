@@ -150,8 +150,6 @@ fun Project.configureMavenPublishing() {
             }
 
             publications.withType(MavenPublication::class.java).configureEach {
-                groupId = project.group.toString()
-                version = project.version.toString()
                 pom {
                     name.set(project.name)
                     description.set(

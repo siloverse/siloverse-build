@@ -200,12 +200,41 @@ version = "0.1.0"
 
 dependencies {
     implementation(libs.bundles.spring.web)
+    implementation(libs.spring.boot.starter.data.jpa)
     testImplementation(libs.testcontainers.postgresql)
 }
 ```
 
 The `spring-web` bundle is language neutral. `jackson-module-kotlin` and `kotlin-reflect`
 are added automatically for modules that compile Kotlin, so nothing extra is needed there.
+Spring Data JPA is opt-in through the `libs.spring.boot.starter.data.jpa` catalog alias.
+
+### Published Artifact Coordinates
+
+The convention plugins create a `mavenJava` publication whose coordinates follow the
+consumer project:
+
+- `groupId` comes from `project.group`
+- `artifactId` comes from `project.name`
+- `version` comes from `project.version`
+
+For example, a project named `orders-api` with `group = "com.example"` and
+`version = "1.2.3"` publishes as `com.example:orders-api:1.2.3`.
+
+To use different Maven coordinates without changing the project coordinates, configure the
+publication explicitly. The convention plugin preserves these overrides:
+
+```kotlin
+import org.gradle.api.publish.maven.MavenPublication
+
+publishing {
+    publications.named<MavenPublication>("mavenJava") {
+        groupId = "com.example.public"
+        artifactId = "orders-client"
+        version = "2.0.0"
+    }
+}
+```
 
 ## Platform/BOM
 

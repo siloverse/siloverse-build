@@ -20,6 +20,7 @@ dependencies {
 
     testImplementation(gradleTestKit())
     testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 gradlePlugin {
