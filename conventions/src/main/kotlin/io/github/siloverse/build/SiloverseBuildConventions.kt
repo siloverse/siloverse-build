@@ -179,7 +179,7 @@ fun Project.configureMavenPublishing() {
     }
 }
 
-fun Project.addSiloversePlatform(configurationName: String = "implementation"): Dependency? =
+fun Project.addSiloversePlatform(configurationName: String): Dependency? =
     dependencies.addPlatform(configurationName)
 
 fun Project.configureSpringBootPackaging() {

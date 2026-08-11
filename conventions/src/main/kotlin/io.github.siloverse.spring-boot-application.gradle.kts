@@ -21,7 +21,7 @@ applyKotlinSupport(springAware = true)
 
 configureJavaConventions()
 configureKotlinJvm()
-addSiloversePlatform()
+addSiloversePlatform("implementation")
 configureJUnitPlatform()
 configureSpringBootPackaging()
 configureSpringKotlinSupport()

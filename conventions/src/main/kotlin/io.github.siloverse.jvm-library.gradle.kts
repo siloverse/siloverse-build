@@ -4,6 +4,8 @@ import io.github.siloverse.build.configureJUnitPlatform
 import io.github.siloverse.build.configureJavaConventions
 import io.github.siloverse.build.configureKotlinJvm
 import io.github.siloverse.build.configureMavenPublishing
+import org.gradle.kotlin.dsl.`java-library`
+import org.gradle.kotlin.dsl.`maven-publish`
 
 // Generic JVM library conventions: works for Java-only, Kotlin-only and mixed modules.
 plugins {
@@ -15,7 +17,8 @@ applyKotlinSupport()
 
 configureJavaConventions()
 configureKotlinJvm()
-addSiloversePlatform()
+addSiloversePlatform("implementation")
 addSiloversePlatform("annotationProcessor")
 configureJUnitPlatform()
 configureMavenPublishing()
+
