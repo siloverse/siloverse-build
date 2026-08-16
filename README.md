@@ -82,6 +82,21 @@ neither). It registers two tasks:
   local. Afterward, merge the PR **with a merge commit** — a rebase-merge would orphan
   the tag.
 
+  **Container-repo classpath gotcha.** Applying `library-release` at an aggregator puts
+  the conventions jar on every child project's plugin classpath. A child that then
+  requests a sibling plugin from the same jar **with a version** — `id("io.github.siloverse.jvm-library") version "x.y.z"`
+  or a version catalog alias — fails with "already on the classpath with an unknown
+  version". Pin the siblings in the aggregator's `plugins` block instead:
+
+  ```kotlin
+  plugins {
+      id("io.github.siloverse.library-release")
+      alias(libs.plugins.siloverse.jvm.library) apply false
+  }
+  ```
+
+  Children then apply the sibling by bare id (or alias), without a version.
+
 `io.github.siloverse.kotlin-library` and `io.github.siloverse.kotlin-application` still work.
 They are thin aliases that force Kotlin on and then delegate to the `jvm-*` plugins. New
 modules should use the `jvm-*` ids regardless of language.
