@@ -12,6 +12,8 @@ Published coordinates:
   - `io.github.siloverse.jvm-library`
   - `io.github.siloverse.jvm-application`
   - `io.github.siloverse.spring-boot-application`
+  - `io.github.siloverse.platform`
+  - `io.github.siloverse.library-release`
   - `io.github.siloverse.kotlin-library` (deprecated alias)
   - `io.github.siloverse.kotlin-application` (deprecated alias)
 
@@ -46,6 +48,39 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 - Spring Boot test and Testcontainers JUnit support
 - `jackson-module-kotlin` and `kotlin-reflect`, only when the module uses Kotlin
 - the shared `platform`
+
+`io.github.siloverse.platform` is for BOM/platform modules, which the `jvm-library`
+convention does not fit (a platform has no java component or toolchain). It applies:
+
+- `java-platform`
+- `maven-publish`, publishing the `javaPlatform` component as a `mavenJavaPlatform` publication
+- GitHub Packages publishing defaults
+
+`io.github.siloverse.library-release` adds release machinery to a library aggregator
+project — the project that owns the version for a family of published modules (or a
+standalone published project). The applied project's own `build.gradle.kts` must set
+`group` and carry a top-level `version = "x.y.z-SNAPSHOT"` line: that line is the single
+source of the library version, and only the release task rewrites it. The plugin also
+spreads the aggregator's `group` and `version` to its subprojects (Gradle inherits
+neither). It registers two tasks:
+
+- `releaseGuard` — every `PublishToMavenRepository` task in the project and its
+  subprojects depends on it. It refuses remote publication unless the version is not a
+  snapshot, the working tree is clean, and HEAD carries the tag `<name>-v<version>`.
+  `publishToMavenLocal` is deliberately not guarded, so snapshot iteration stays
+  frictionless.
+- `release` — the whole release in one command, run by a human from a PR branch:
+
+  ```bash
+  ./gradlew <library>:release -PreleaseVersion=x.y.z
+  ```
+
+  It validates (clean tree, not on main or a detached HEAD, branch rebased on a freshly
+  fetched main, version moves forward, tag free), rewrites the version line, runs a full
+  `build`, commits and tags the release, publishes, commits the next patch `-SNAPSHOT`,
+  and pushes branch and tag atomically. Failures before the push revert everything
+  local. Afterward, merge the PR **with a merge commit** — a rebase-merge would orphan
+  the tag.
 
 `io.github.siloverse.kotlin-library` and `io.github.siloverse.kotlin-application` still work.
 They are thin aliases that force Kotlin on and then delegate to the `jvm-*` plugins. New
