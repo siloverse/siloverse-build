@@ -1,112 +1,79 @@
-import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
+package io.github.siloverse.build.tasks
 
-// Release machinery for a library aggregator project (a project whose subprojects are
-// the published modules, or a standalone published project). Two tasks:
-//
-//   releaseGuard — every task of type PublishToMavenRepository in this project and its
-//   subprojects depends on it; it refuses remote publication unless HEAD is a clean,
-//   tagged, non-snapshot release commit.
-//
-//   release — the whole release, one command, run by a human from a PR branch:
-//   ./gradlew <library>:release -PreleaseVersion=x.y.z
-//
-// Contract with the applied project: its own build.gradle.kts sets `group` and carries
-// a top-level `version = "x.y.z-SNAPSHOT"` line. That line is the single source of the
-// library version — only the release task rewrites it: a bare x.y.z exists exactly on
-// the release commit it tags; every other commit carries the next -SNAPSHOT.
-//
-// Everything else derives from the project the plugin sits on: library name =
-// project.name (tag prefix "<name>-v", commit wording), identity file = the project's
-// build file, publish scope = the project directory, packages link = the origin remote.
+import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
+import java.io.File
 
-val aggregator = project
+/**
+ * The whole release, one command, run by a human from a PR branch:
+ *
+ *   ./gradlew <library>:release -PreleaseVersion=x.y.z
+ *
+ * validate (clean tree · not main · rebased on refreshed main · version moves
+ * forward) → set version → build → release commit + tag → publish → next
+ * -SNAPSHOT commit → push branch and tag atomically. Afterward the PR is
+ * merged by a human WITH A MERGE COMMIT (never rebase: the pushed tag points
+ * at the release commit, and a rebase-merge would orphan it).
+ *
+ * Publish runs between the two commits so artifacts only ever exist for a
+ * commit that exists, with the tag already at HEAD — the same clean, tagged
+ * state [ReleaseGuardTask] enforces. Failures before the push revert everything
+ * local; nothing leaves the machine until the final atomic push.
+ */
+@DisableCachingByDefault(because = "Performs the release side effects (commits, tags, publish, push) — never cacheable.")
+abstract class ReleaseTask : DefaultTask() {
 
-// Gradle does NOT inherit these: an unset subproject version is "unspecified" and the
-// default group leaks the container path (e.g. java-library.messaging). Spread them
-// after the aggregator's build script has run — the plugin applies before the script
-// body sets group/version. Subprojects configure later still, so they may override.
-afterEvaluate {
-    subprojects {
-        group = aggregator.group
-        version = aggregator.version
-    }
-}
+    /** The library's name, `project.name` of the aggregator — tag prefix and commit wording. */
+    @get:Internal
+    abstract val libraryName: Property<String>
 
-// No ancestor-of-main check: the release task publishes from a PR branch BEFORE the
-// merge — the accepted trade is that an abandoned release PR leaves published
-// artifacts and burns the version number.
-val releaseGuard = tasks.register("releaseGuard") {
-    description = "Refuses remote publication unless HEAD is a clean, tagged release commit."
+    /** Tag prefix for this library, `<name>-v`. */
+    @get:Internal
+    abstract val tagPrefix: Property<String>
 
-    val repoRoot = rootDir
-    val gitStatus = providers.exec {
-        workingDir(repoRoot)
-        commandLine("git", "status", "--porcelain")
-    }.standardOutput.asText
+    /** Task path shown in error messages, e.g. `:messaging:release`. */
+    @get:Internal
+    abstract val releaseTaskPath: Property<String>
 
-    val tagsAtHead = providers.exec {
-        workingDir(repoRoot)
-        commandLine("git", "tag", "--points-at", "HEAD")
-    }.standardOutput.asText
+    /** The aggregator's version, captured after the build script has set it. */
+    @get:Internal
+    abstract val currentVersion: Property<String>
 
-    // Task configuration runs after project evaluation, so this sees the final version.
-    val currentVersion = project.version.toString()
-    val tagPrefix = "${project.name}-v"
-    val releaseTaskPath = if (project == project.rootProject) ":release" else "${project.path}:release"
+    /** The aggregator's project directory — the publish scope. */
+    @get:Internal
+    abstract val libraryDirectory: DirectoryProperty
 
-    doLast {
-        check(!currentVersion.endsWith("-SNAPSHOT")) {
-            "Refusing remote publish: version is $currentVersion — snapshots go to mavenLocal only. " +
-                    "Fix: release through the release task — ./gradlew $releaseTaskPath -PreleaseVersion=x.y.z"
-        }
-        check(gitStatus.get().isBlank()) {
-            "Refusing remote publish: working tree is dirty. " +
-                    "Fix: commit or stash your changes — published artifacts must be reproducible from a commit."
-        }
-        check(tagsAtHead.get().lines().contains("$tagPrefix$currentVersion")) {
-            "Refusing remote publish: HEAD is not tagged $tagPrefix$currentVersion. " +
-                    "Fix: don't publish by hand — the release task tags the release commit before it publishes."
-        }
-    }
-}
+    /** The repository root — where git commands run. */
+    @get:Internal
+    abstract val repositoryRoot: DirectoryProperty
 
-// PublishToMavenRepository covers all remote publishes and deliberately excludes
-// publishToMavenLocal (a sibling task class), so snapshots stay frictionless.
-allprojects {
-    tasks.withType<PublishToMavenRepository>().configureEach {
-        dependsOn(releaseGuard)
-    }
-}
+    /** The aggregator's build file — carries the single `version = "x.y.z"` line. */
+    @get:Internal
+    abstract val identityFile: RegularFileProperty
 
-// The whole release, one command, run by a human from a PR branch:
-//
-//   ./gradlew <library>:release -PreleaseVersion=x.y.z
-//
-// validate (clean tree · not main · rebased on refreshed main · version moves
-// forward) → set version → build → release commit + tag → publish → next
-// -SNAPSHOT commit → push branch and tag atomically. Afterward the PR is
-// merged by a human WITH A MERGE COMMIT (never rebase: the pushed tag points
-// at the release commit, and a rebase-merge would orphan it).
-//
-// Publish runs between the two commits so artifacts only ever exist for a
-// commit that exists, with the tag already at HEAD — the same clean, tagged
-// state releaseGuard enforces. Failures before the push revert everything
-// local; nothing leaves the machine until the final atomic push.
-tasks.register("release") {
-    val libraryName = project.name
-    description = "Releases $libraryName from a PR branch: validate, build, commit+tag, publish, bump to next snapshot, push."
+    /** The requested release version, from `-PreleaseVersion=x.y.z`. */
+    @get:Internal
+    abstract val requestedVersion: Property<String>
 
-    val tagPrefix = "$libraryName-v"
-    val releaseTaskPath = if (project == project.rootProject) ":release" else "${project.path}:release"
-    val currentVersion = project.version.toString()
-    val libraryDir = projectDir
-    val repoRoot = rootDir
-    val identityFile = buildFile
-    val identityFilePath = identityFile.relativeTo(repoRoot).path
-    val requestedVersion = providers.gradleProperty("releaseVersion")
-    val gradlew = File(repoRoot, "gradlew").absolutePath
+    /** Absolute path of the repository's gradlew wrapper. */
+    @get:Internal
+    abstract val gradlewPath: Property<String>
 
-    doLast {
+    @TaskAction
+    fun release() {
+        val repoRoot = repositoryRoot.get().asFile
+        val libraryName = libraryName.get()
+        val tagPrefix = tagPrefix.get()
+        val identityFile = identityFile.get().asFile
+        val identityFilePath = identityFile.relativeTo(repoRoot).path
+        val gradlew = gradlewPath.get()
+
         fun gitExitCode(vararg args: String): Int {
             val process = ProcessBuilder("git", *args).directory(repoRoot).redirectErrorStream(true).start()
             process.inputStream.readAllBytes()
@@ -129,7 +96,7 @@ tasks.register("release") {
         fun parts(version: String): List<Int> = version.split(".").map { it.toInt() }
 
         val version = requestedVersion.orNull ?: error(
-            "Missing release version. Usage: ./gradlew $releaseTaskPath -PreleaseVersion=x.y.z"
+            "Missing release version. Usage: ./gradlew ${releaseTaskPath.get()} -PreleaseVersion=x.y.z"
         )
         check(Regex("""\d+\.\d+\.\d+""").matches(version)) {
             "Release version must be bare x.y.z (got \"$version\") — the task adds -SNAPSHOT to the next version itself."
@@ -160,11 +127,11 @@ tasks.register("release") {
                     "Fix: git rebase main"
         }
 
-        val current = currentVersion.removeSuffix("-SNAPSHOT")
+        val current = currentVersion.get().removeSuffix("-SNAPSHOT")
         val currentParts = parts(current)
         val requestedParts = parts(version)
         check(compareValuesBy(requestedParts, currentParts, { it[0] }, { it[1] }, { it[2] }) >= 0) {
-            "Refusing to release $version: the build file already says $currentVersion — versions never move backwards. " +
+            "Refusing to release $version: the build file already says ${currentVersion.get()} — versions never move backwards. " +
                     "Fix: pick $current or higher."
         }
 
@@ -205,7 +172,7 @@ tasks.register("release") {
             "$libraryName $version\n\nArtifacts: https://github.com/$repoSlug/packages")
 
         try {
-            gradle(libraryDir, "publish")
+            gradle(libraryDirectory.get().asFile, "publish")
         } catch (failure: Exception) {
             git("tag", "-d", tag)
             git("reset", "--hard", "HEAD~1")
