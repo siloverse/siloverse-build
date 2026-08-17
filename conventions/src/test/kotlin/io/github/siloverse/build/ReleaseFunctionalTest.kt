@@ -7,7 +7,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 
-class LibraryReleaseFunctionalTest {
+class ReleaseFunctionalTest {
     @TempDir
     lateinit var temporaryDirectory: Path
 
@@ -153,7 +153,7 @@ class LibraryReleaseFunctionalTest {
             project.resolve("build.gradle.kts"),
             """
                 plugins {
-                    id("io.github.siloverse.library-release")
+                    id("io.github.siloverse.parent")
                 }
 
                 group = "com.example"

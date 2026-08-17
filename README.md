@@ -13,7 +13,7 @@ Published coordinates:
   - `io.github.siloverse.jvm-application`
   - `io.github.siloverse.spring-boot-application`
   - `io.github.siloverse.platform`
-  - `io.github.siloverse.library-release`
+  - `io.github.siloverse.parent`
   - `io.github.siloverse.kotlin-library` (deprecated alias)
   - `io.github.siloverse.kotlin-application` (deprecated alias)
 
@@ -56,13 +56,33 @@ convention does not fit (a platform has no java component or toolchain). It appl
 - `maven-publish`, publishing the `javaPlatform` component as a `mavenJavaPlatform` publication
 - GitHub Packages publishing defaults
 
-`io.github.siloverse.library-release` adds release machinery to a library aggregator
-project — the project that owns the version for a family of published modules (or a
-standalone published project). The applied project's own `build.gradle.kts` must set
-`group` and carry a top-level `version = "x.y.z-SNAPSHOT"` line: that line is the single
-source of the library version, and only the release task rewrites it. The plugin also
-spreads the aggregator's `group` and `version` to its subprojects (Gradle inherits
-neither). It registers two tasks:
+`io.github.siloverse.parent` is the convention for a library aggregator project — the
+parent of a module family that releases together, the project that owns the version for
+its published modules (or a standalone published project). The whole aggregator build
+file collapses to one plugin plus the family's identity:
+
+```kotlin
+plugins {
+    alias(local.plugins.siloverse.parent)
+}
+
+group = "io.github.siloverse"
+version = "1.0.0-SNAPSHOT"
+```
+
+The `version` line is the contract: it is the single source of the library version, and
+only the release task rewrites it. The plugin spreads the aggregator's `group` and
+`version` to its subprojects (Gradle inherits neither), and children apply the sibling
+conventions by bare id, without a version — the parent alias is the single place the
+siloverse-build version is pinned:
+
+```kotlin
+plugins { id("io.github.siloverse.jvm-library") }   // a published module
+plugins { id("io.github.siloverse.platform") }      // a BOM module
+```
+
+It registers two release tasks (it replaced `io.github.siloverse.library-release`,
+which existed only in 1.9.0 and carried the same machinery):
 
 - `releaseGuard` — every `PublishToMavenRepository` task in the project and its
   subprojects depends on it. It refuses remote publication unless the version is not a
@@ -82,20 +102,13 @@ neither). It registers two tasks:
   local. Afterward, merge the PR **with a merge commit** — a rebase-merge would orphan
   the tag.
 
-  **Container-repo classpath gotcha.** Applying `library-release` at an aggregator puts
-  the conventions jar on every child project's plugin classpath. A child that then
-  requests a sibling plugin from the same jar **with a version** — `id("io.github.siloverse.jvm-library") version "x.y.z"`
-  or a version catalog alias — fails with "already on the classpath with an unknown
-  version". Pin the siblings in the aggregator's `plugins` block instead:
-
-  ```kotlin
-  plugins {
-      id("io.github.siloverse.library-release")
-      alias(libs.plugins.siloverse.jvm.library) apply false
-  }
-  ```
-
-  Children then apply the sibling by bare id (or alias), without a version.
+  **Container-repo classpath gotcha.** Applying `parent` at an aggregator puts the
+  conventions jar on every child project's plugin classpath. A child that then requests
+  a sibling plugin from the same jar **with a version** — `id("io.github.siloverse.jvm-library") version "x.y.z"`
+  or a version catalog alias carrying `version.ref` — fails with "already on the
+  classpath with an unknown version": Gradle only knows the version of the plugin id
+  that was actually resolved, not of the siblings riding in the same jar. That is why
+  children must apply siblings by bare id, without a version.
 
 `io.github.siloverse.kotlin-library` and `io.github.siloverse.kotlin-application` still work.
 They are thin aliases that force Kotlin on and then delegate to the `jvm-*` plugins. New
