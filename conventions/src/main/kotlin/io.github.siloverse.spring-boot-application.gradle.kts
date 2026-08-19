@@ -11,7 +11,6 @@ import io.github.siloverse.build.configureSpringKotlinSupport
 plugins {
     java
     id("org.springframework.boot")
-    id("io.spring.dependency-management")
     application
     `maven-publish`
 }
