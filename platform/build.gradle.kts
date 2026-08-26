@@ -20,7 +20,6 @@ dependencies {
     constraints {
         api(libs.kotlin.stdlib)
         api(libs.kotlin.reflect)
-        api(libs.jackson.module.kotlin)
         api(libs.kotlinx.coroutines.core)
         api(libs.kotlinx.coroutines.reactor)
         api(libs.kotlin.logging)

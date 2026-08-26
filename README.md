@@ -46,7 +46,7 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 - Java toolchain 21
 - JUnit Platform
 - Spring Boot test and Testcontainers JUnit support
-- `jackson-module-kotlin` and `kotlin-reflect`, only when the module uses Kotlin
+- `kotlin-reflect`, only when the module uses Kotlin
 - the shared `platform`
 
 `io.github.siloverse.platform` is for BOM/platform modules, which the `jvm-library`
@@ -268,7 +268,7 @@ dependencies {
 }
 ```
 
-The `spring-web` bundle is language neutral. `jackson-module-kotlin` and `kotlin-reflect`
+The `spring-web` bundle is language neutral. `kotlin-reflect`
 are added automatically for modules that compile Kotlin, so nothing extra is needed there.
 Spring Data JPA is opt-in through the `libs.spring.boot.starter.data.jpa` catalog alias.
 
@@ -319,9 +319,9 @@ Prefer a narrow constraint with a reason and a removal target:
 ```kotlin
 dependencies {
     constraints {
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin") {
+        implementation("com.x.y:some-artifacte") {
             version {
-                strictly("2.22.1")
+                strictly("1.0.0")
             }
             because("Temporary service-specific exception; remove after platform catches up.")
         }

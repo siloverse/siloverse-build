@@ -85,7 +85,7 @@ fun Project.configureJavaConventions() {
 
     tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
-        // Spring, Jackson and JUnit read real parameter names from the bytecode.
+        // Spring and JUnit read real parameter names from the bytecode.
         options.compilerArgs.add("-parameters")
     }
 
@@ -194,7 +194,6 @@ fun Project.configureSpringBootPackaging() {
  */
 fun Project.configureSpringKotlinSupport() {
     pluginManager.withPlugin(SiloverseBuild.kotlinJvmPluginId) {
-        dependencies.add("implementation", "com.fasterxml.jackson.module:jackson-module-kotlin")
         dependencies.add("implementation", "org.jetbrains.kotlin:kotlin-reflect")
     }
 }
