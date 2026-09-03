@@ -1,3 +1,4 @@
+import io.github.siloverse.build.SiloverseBuild
 import io.github.siloverse.build.addSiloversePlatform
 import io.github.siloverse.build.applyKotlinSupport
 import io.github.siloverse.build.configureJUnitPlatform
@@ -27,6 +28,6 @@ configureSpringKotlinSupport()
 configureMavenPublishing()
 
 dependencies {
-    "testImplementation"("org.springframework.boot:spring-boot-starter-test")
-    "testImplementation"("org.testcontainers:testcontainers-junit-jupiter")
+    "testImplementation"(SiloverseBuild.springBootStarterTestNotation)
+    "testImplementation"(SiloverseBuild.testcontainersJunitJupiterNotation)
 }

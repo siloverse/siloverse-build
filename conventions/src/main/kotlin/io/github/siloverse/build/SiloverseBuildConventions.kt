@@ -22,6 +22,16 @@ object SiloverseBuild {
 
     const val kotlinJvmPluginId = "org.jetbrains.kotlin.jvm"
     const val kotlinSpringPluginId = "org.jetbrains.kotlin.plugin.spring"
+    const val kotlinJpaPluginId = "org.jetbrains.kotlin.plugin.jpa"
+
+    // Dependency notations the conventions inject. Deliberately version-less: every version is
+    // governed by the platform BOM, which addSiloversePlatform puts on the module's classpath.
+    const val junitJupiterNotation = "org.junit.jupiter:junit-jupiter"
+    const val junitPlatformLauncherNotation = "org.junit.platform:junit-platform-launcher"
+    const val kotlinReflectNotation = "org.jetbrains.kotlin:kotlin-reflect"
+    const val jacksonModuleKotlinNotation = "tools.jackson.module:jackson-module-kotlin"
+    const val springBootStarterTestNotation = "org.springframework.boot:spring-boot-starter-test"
+    const val testcontainersJunitJupiterNotation = "org.testcontainers:testcontainers-junit-jupiter"
 
     /**
      * `true` / `false` force Kotlin support on or off for a project.
@@ -73,6 +83,7 @@ fun Project.applyKotlinSupport(springAware: Boolean = false) {
     pluginManager.apply(SiloverseBuild.kotlinJvmPluginId)
     if (springAware) {
         pluginManager.apply(SiloverseBuild.kotlinSpringPluginId)
+        pluginManager.apply(SiloverseBuild.kotlinJpaPluginId)
     }
 }
 
@@ -134,8 +145,8 @@ fun Project.configureJUnitPlatform() {
     }
 
     dependencies.addPlatform("testImplementation")
-    dependencies.add("testImplementation", "org.junit.jupiter:junit-jupiter")
-    dependencies.add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+    dependencies.add("testImplementation", SiloverseBuild.junitJupiterNotation)
+    dependencies.add("testRuntimeOnly", SiloverseBuild.junitPlatformLauncherNotation)
 }
 
 fun Project.configureMavenPublishing() {
@@ -194,7 +205,8 @@ fun Project.configureSpringBootPackaging() {
  */
 fun Project.configureSpringKotlinSupport() {
     pluginManager.withPlugin(SiloverseBuild.kotlinJvmPluginId) {
-        dependencies.add("implementation", "org.jetbrains.kotlin:kotlin-reflect")
+        dependencies.add("implementation", SiloverseBuild.kotlinReflectNotation)
+        dependencies.add("implementation", SiloverseBuild.jacksonModuleKotlinNotation)
     }
 }
 

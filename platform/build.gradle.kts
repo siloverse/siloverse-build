@@ -12,18 +12,15 @@ javaPlatform {
 }
 
 dependencies {
-    api(platform(libs.spring.boot.dependencies))
-    api(platform(libs.testcontainers.bom))
-    api(platform(libs.junit.bom))
-    api(platform(libs.spring.modulith.bom))
+    dependencies {
+        api(platform(libs.spring.boot.dependencies))
+        api(platform(libs.testcontainers.bom))
+        api(platform(libs.junit.bom))
 
-    constraints {
-        api(libs.kotlin.stdlib)
-        api(libs.kotlin.reflect)
-        api(libs.kotlinx.coroutines.core)
-        api(libs.kotlinx.coroutines.reactor)
-        api(libs.kotlin.logging)
-        api(libs.logstash.logback.encoder)
+        constraints {
+            api(libs.kotlin.stdlib)
+            api(libs.kotlin.reflect)
+        }
     }
 }
 
