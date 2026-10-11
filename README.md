@@ -39,15 +39,23 @@ The examples use GitHub owner `siloverse`. If the repository is owned by a diffe
 
 - `java`
 - Kotlin JVM and Kotlin Spring (all-open), when the module uses Kotlin
-- Spring Boot
-- Spring dependency-management
+- Spring Boot (the shared `platform` imports the Boot BOM; the
+  `io.spring.dependency-management` plugin is deliberately not applied — it was redundant
+  and broke Gradle's configuration cache)
 - `application`
 - `maven-publish`
 - Java toolchain 21
 - JUnit Platform
 - Spring Boot test and Testcontainers JUnit support
-- `jackson-module-kotlin` and `kotlin-reflect`, only when the module uses Kotlin
+- `kotlin-reflect`, `jackson-module-kotlin` and the Kotlin JPA (no-arg) compiler plugin,
+  only when the module uses Kotlin
 - the shared `platform`
+
+Observability is one catalog bundle, `libs.bundles.siloverse.observability`: Prometheus
+registry, OTel tracing bridge, `spring-boot-starter-opentelemetry`, the OTel Logback
+appender and Actuator (the `/actuator/prometheus` scrape endpoint is Actuator — without
+it metrics would die silently). The appender is the only pinned entry in the catalog: its
+instrumentation line `2.N` must match Boot's OTel SDK `1.(N+34)`.
 
 `io.github.siloverse.platform` is for BOM/platform modules, which the `jvm-library`
 convention does not fit (a platform has no java component or toolchain). It applies:
@@ -268,7 +276,7 @@ dependencies {
 }
 ```
 
-The `spring-web` bundle is language neutral. `jackson-module-kotlin` and `kotlin-reflect`
+The `spring-web` bundle is language neutral. `kotlin-reflect`
 are added automatically for modules that compile Kotlin, so nothing extra is needed there.
 Spring Data JPA is opt-in through the `libs.spring.boot.starter.data.jpa` catalog alias.
 
@@ -319,9 +327,9 @@ Prefer a narrow constraint with a reason and a removal target:
 ```kotlin
 dependencies {
     constraints {
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin") {
+        implementation("com.x.y:some-artifacte") {
             version {
-                strictly("2.22.1")
+                strictly("1.0.0")
             }
             because("Temporary service-specific exception; remove after platform catches up.")
         }

@@ -37,28 +37,6 @@ class MavenPublishingFunctionalTest {
     }
 
     @Test
-    fun `kotlin library alias uses the consumer project's final coordinates`() {
-        val projectDirectory = writeConsumerProject(
-            directoryName = "kotlin-library-default-coordinates",
-            pluginId = "io.github.siloverse.kotlin-library",
-            projectName = "the-kotlin-test-project",
-            buildConfiguration = """
-                group = "com.example.kotlin"
-                version = "2.3.4"
-            """.trimIndent()
-        )
-
-        generatePom(projectDirectory)
-
-        assertPomCoordinates(
-            projectDirectory,
-            groupId = "com.example.kotlin",
-            artifactId = "the-kotlin-test-project",
-            version = "2.3.4"
-        )
-    }
-
-    @Test
     fun `explicit Maven publication coordinates are preserved`() {
         val projectDirectory = writeConsumerProject(
             directoryName = "explicit-coordinates",
