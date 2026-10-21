@@ -1,0 +1,45 @@
+{{>licenseInfo}}
+package {{configurationPackage}}
+
+import {{packageName}}.infrastructure.Serializer
+{{#apiInfo.apis}}
+import {{apiPackage}}.{{classname}}
+{{/apiInfo.apis}}
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.context.annotation.Bean
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter
+import org.springframework.web.client.RestClient
+import java.util.function.Consumer
+
+/**
+ * Wires the {{serviceName}} client into a consumer: one RestClient named `{{serviceName}}-client`
+ * and one bean per API. The base URL comes from `clients.{{serviceName}}.url`. The RestClient is
+ * built from the consumer's own `RestClient.Builder`, so tracing and other instrumentation apply.
+ * A `Consumer<RestClient.Builder>` bean named `{{serviceName}}-customizer` may add interceptors,
+ * for example OAuth2 client credentials.
+ */
+@AutoConfiguration
+open class ClientConfiguration {
+
+    @Bean(name = ["{{serviceName}}-client"])
+    @ConditionalOnMissingBean(name = ["{{serviceName}}-client"])
+    open fun restClient(
+        builder: RestClient.Builder,
+        @Value("\${clients.{{serviceName}}.url}") url: String,
+        @Autowired(required = false) @Qualifier("{{serviceName}}-customizer") customizer: Consumer<RestClient.Builder>?,
+    ): RestClient =
+        builder.clone()
+            .baseUrl(url)
+            .configureMessageConverters { it.registerDefaults().withJsonConverter(JacksonJsonHttpMessageConverter(Serializer.jacksonObjectMapper)) }
+            .also { customizer?.accept(it) }
+            .build()
+{{#apiInfo.apis}}
+
+    @Bean(name = ["{{serviceName}}-{{classname}}"])
+    open fun {{classVarName}}(@Qualifier("{{serviceName}}-client") client: RestClient): {{classname}} = {{classname}}(client)
+{{/apiInfo.apis}}
+}

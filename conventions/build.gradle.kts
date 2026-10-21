@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.kotlin.allopen)
     implementation(libs.kotlin.noarg)
     implementation(libs.spring.boot.gradle.plugin)
+    implementation(libs.openapi.generator.gradle.plugin)
 
     testImplementation(gradleTestKit())
     testImplementation(libs.junit.jupiter)

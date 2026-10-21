@@ -188,6 +188,45 @@ find ~/.m2/repository -path '*io/github/siloverse/jvm-library*' -print
 find ~/.m2/repository -path '*io/github/siloverse/spring-boot-application*' -print
 ```
 
+## OpenAPI: the silo's contract and its generated client
+
+Two conventions turn a silo's API into a committed contract and a published Kotlin client.
+The library side is `io.github.siloverse:openapi-springdoc` (java-library), which makes
+springdoc describe filters, paging, sort and includes.
+
+`io.github.siloverse.openapi-spec`, applied to the module that boots the application in tests:
+
+- sets `siloverse.openapi.spec` (= `<repo root>/openapi-spec.yaml`) and `siloverse.openapi.update`
+  (= `true` with `-PupdateOpenApiSpec`) on every `Test` task
+- the silo's spec test is one line, `OpenApiSpec.verify(mockMvc)`: a drifted contract fails the
+  test and names the fix; `./gradlew test -PupdateOpenApiSpec` rewrites it; a missing file is
+  written the first time
+- the contract is a test input, so editing it reruns the test
+
+`io.github.siloverse.openapi-client`, applied to the silo's `kotlin-client` module:
+
+```kotlin
+plugins { id("io.github.siloverse.openapi-client") }
+openApiClient {
+    service.set("user-silo")                                  // default: the root project name
+    basePackage.set("io.github.siloverse.user.client")        // default: derived from it
+}
+```
+
+- `./gradlew :kotlin-client:generateClient` regenerates `src/main/kotlin` from the committed
+  `openapi-spec.yaml` with openapi-generator (`kotlin`, `jvm-spring-restclient`, Jackson 3,
+  Spring Boot 4) and removes the generator's own project files. Generation is never part of
+  compilation: run it after the contract changed, review, commit.
+- The generated sources are committed and published with the silo's version by the silo's
+  release task, like every other module of the silo.
+- A consumer gets, by auto-configuration, one `RestClient` bean named `<service>-client` with its
+  base URL from `clients.<service>.url`, built from the consumer's own `RestClient.Builder` (so
+  tracing applies) and customizable through a `Consumer<RestClient.Builder>` bean named
+  `<service>-customizer` (OAuth2 interceptors go there), and one bean per generated
+  `XControllerApi`, named `<service>-XControllerApi`.
+- The templates for the configuration and the auto-configuration import live in this jar under
+  `openapi-templates/`; everything else is the generator's built-in template.
+
 ## Publish To GitHub Packages
 
 `gradle.properties` contains the single shared project version:
