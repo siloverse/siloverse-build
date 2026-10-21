@@ -3,6 +3,7 @@ kotlin = "2.4.0"
 spring-boot = "4.1.0"
 junit-jupiter = "6.1.2"
 testcontainers = "2.0.5"
+openapi-generator = "7.26.0"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -13,6 +14,7 @@ kotlin-noarg = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "ko
 
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+openapi-generator-gradle-plugin = { module = "org.openapitools:openapi-generator-gradle-plugin", version.ref = "openapi-generator" }
 
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-jupiter" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
